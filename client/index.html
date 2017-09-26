@@ -2,12 +2,67 @@
 <html lang="en">
 <head>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script type="text/babel" >
         "use strict";
-    
+        
+        let socket;
+        let canvas;
+        let ctx;
+        let sendBufferCanvas;
+        let sendBufferCtx;
+
+        const init = () => {
+            socket = io.connect();
+            canvas = document.querySelector("#canvasID");
+            ctx = canvas.getContext("2d");
+            setupSocket();
+            setup();
+        }
+        
+        const setup = () => {
+            sendBufferCanvas = document.createElement("canvas");
+            sendBufferCanvas.height = 200;
+            sendBufferCanvas.width = 200;
+            sendBufferCtx = sendBufferCanvas.getContext("2d");
+            
+            ctx.fillRect(100, 100, 200, 200);
+            
+            sendBufferCtx.fillRect(0, 0, 200, 200);
+            
+            const data = {
+                x: 300,
+                y: 300,
+                height: 200,
+                width: 200,
+                imgData: sendBufferCanvas.toDataURL(),
+            };
+            
+            socket.emit('draw', data);
+        }
+        
+        const setupSocket = () => {
+            socket.on('updateCanvas', (data) => {
+                let image = new Image();
+            
+                image.onload = () => {
+                    ctx.save();
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.drawImage(image, data.x, data.y, data.width, data.height);
+                    ctx.restore();
+                };
+            
+                image.src = data.imgData;
+                
+                console.dir(data);
+            });
+        }
+        
+        window.onload = init;
+
     </script>
 </head>
 <body>
-
+<canvas id="canvasID" width="500" height="500"></canvas>
 </body>
 </html>
